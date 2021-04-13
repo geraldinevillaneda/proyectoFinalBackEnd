@@ -20,7 +20,7 @@ const crearToken = (user) => {
 }
 
 
-router.get('/',(req, res)=>{
+router.get('/', verify ,(req, res)=>{
     connection.query('SELECT * FROM usuarios', (error, rows, fields)=>{
         if(!error){
             res.json(rows);

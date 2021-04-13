@@ -3,6 +3,8 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const verify = require('./verifyToken')
+
 const connection = require('../database');
 
 const buscrarGasolinera  = () => {
@@ -37,40 +39,107 @@ router.get('/', async (req, res)=>{
 });
 
 
-router.get('/:id', async( req, res)=>{
+router.get('/:id', verify,   async( req, res, next)=>{
     const { id } = req.params;
-    await connection.query('select * from gasolineras where id = ?', [id], (error, rows, fields)=>{
-        if(!error){
-            res.json(rows);
-        }else{
-            console.log(error);
-        }
-    });
+    console.log(id)
+    const station = await getbyId(id)
+    
+    if(!station)
+    {
+        return(
+            res.json({
+            Auth: false,
+            done: 'La gasolinera no existe'
+            
+        }))
+    }
+
+    res.json({
+        Auth: true,
+        datos: station,
+        done: "Gasolinera Encontrada"
+    });  
 });
 
-router.post('/agregar', (req, res) =>{
-    const { id, nombre_estacion, direccion_estacion, telefono_estacion,
+
+router.post('/agregar', verify, async(req, res) =>{
+
+    const station = await getbyId(req.body.id);
+
+    if(station)
+    {
+        res.json({
+            Auth: false,
+            done: 'La gasolinera con este codigo ya existe'
+        })
+    }
+    else
+    {
+        const { id, nombre_estacion, direccion_estacion, telefono_estacion,
             latitud_estacion, longitud_estacion } = req.body;
-    nuevaEstacion = [
+        const nuevaEstacion = {
         id,
         nombre_estacion,
         direccion_estacion,
         telefono_estacion,
         latitud_estacion,
         longitud_estacion
-    ];
-    connection.query('insert into gasolineras set ?', [nuevaEstacion]);
-    res.json('received');
+        };
+        console.log(nuevaEstacion)
+    connection.query('INSERT INTO gasolineras set ?', [nuevaEstacion]);
+    res.json({
+        Auth: true,
+        done: 'La estación fue agregada correctamente',
+        token: true
+    });
+    }
 });
 
-router.get('/delete/:id', async( req, res)=>{
+const getbyId = (id) => {
+    return new Promise((resolve, reject) =>{
+        connection.query('SELECT * FROM gasolineras where id = ?',
+        [id], 
+        (err, rows) => {
+            if(err) reject(err)
+            resolve(rows[0])
+        });
+    });
+};
+
+
+
+router.get('/delete/:id', verify,  async( req, res)=>{
+
     const { id } = req.params;
-    await connection.query('delete from gasolineras where id = ?', [id]);
-    res.json('estacion deleted');
+    const respuesta = new Promise((resolve, reject) => {
+        connection.query('delete from gasolineras where id = ?', 
+        [id],
+        (err, rows) => {
+            if(err) reject(err)
+            resolve(rows[0])
+        });
+    });
+    
+    if(!respuesta)
+    {
+        return res.json({
+            Auth: false,
+            token: true,
+            done: 'No se pudo Eliminar la estacion'
+        });
+    }
+    else
+    {
+        return res.json({
+            Auth: true,
+            token: true,
+            done: 'La estacion se elimino correctamente'
+        })
+    }
 
 });
 
-router.post('/update/:id', async (req, res)=>{
+router.post('/update/:id', verify, async (req, res)=>{
     const { id } = req.params;
     const { nombre_estacion, direccion_estacion, telefono_estacion,
             latitud_estacion, longitud_estacion } = req.body;
@@ -81,9 +150,33 @@ router.post('/update/:id', async (req, res)=>{
         latitud_estacion,
         longitud_estacion
     }
-    await connection.query('update gasolineras set ? where id = ?', [actualizarE, id]);
-    res.json({Status: 'Estacion updated'});
 
+
+    const respuesta = new Promise((resolve, reject) => {
+        connection.query('update gasolineras set ? where id = ?', 
+        [actualizarE, id],
+        (err, rows) => {
+            if(err) reject(err)
+            resolve(rows[0])
+        });
+    });
+
+    if(!respuesta)
+    {
+        return res.json({
+            Auth: false,
+            token: true,
+            done: 'No se pudo actualizar los datos'
+        });
+    }
+    else
+    {
+        return res.json({
+            Auth: true,
+            token: true,
+            done: 'Los datos se actualizaron correctamente'
+        })
+    }
 });
 
 
