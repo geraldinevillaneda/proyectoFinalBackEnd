@@ -7,12 +7,23 @@ const verify = require('./verifyToken')
 
 const connection = require('../database');
 
-const buscrarGasolinera  = () => {
+const buscrarSede  = () => {
 
     return new Promise((resolve, reject) =>{
-        connection.query('SELECT * FROM gasolineras',(err, rows) => {
+        connection.query('SELECT * FROM t005_sedes',(err, rows) => {
             if(err) reject(err)
             resolve(rows)
+        });
+    });
+};
+
+const getbyId = (id) => {
+    return new Promise((resolve, reject) =>{
+        connection.query('SELECT * FROM t005_sedes where id_sede = ?',
+        [id], 
+        (err, rows) => {
+            if(err) reject(err)
+            resolve(rows[0])
         });
     });
 };
@@ -20,13 +31,13 @@ const buscrarGasolinera  = () => {
 
 router.get('/', async (req, res)=>{
 
-    const datos = await buscrarGasolinera()
+    const datos = await buscrarSede()
 
     if(!datos)
     {
         return res.json({
             Auth: false,
-            done: "no hay ninguna gasolinera registrada",
+            done: "no hay ninguna sede registrada",
             data: {}
         })
     }
@@ -41,78 +52,58 @@ router.get('/', async (req, res)=>{
 
 router.get('/:id', verify,   async( req, res, next)=>{
     const { id } = req.params;
-    console.log(id)
-    const station = await getbyId(id)
+    const sede = await getbyId(id)
     
-    if(!station)
+    if(!sede)
     {
         return(
             res.json({
             Auth: false,
-            done: 'La gasolinera no existe'
+            done: 'La Sede no existe'
             
         }))
     }
 
     res.json({
         Auth: true,
-        datos: station,
-        done: "Gasolinera Encontrada"
+        datos: sede, 
+        done: "Sede Encontrada"
     });  
 });
 
 
 router.post('/agregar', verify, async(req, res) =>{
 
-    const station = await getbyId(req.body.id);
+    const {ESTADO, NOMBRE_SEDE, LATITUD, LONGITUD, ID_CIUDAD, ID_USUARIO,
+        t001_usuarios_id_usuario, } = req.body;
 
-    if(station)
-    {
-        res.json({
-            Auth: false,
-            done: 'La gasolinera con este codigo ya existe'
-        })
-    }
-    else
-    {
-        const { id, nombre_estacion, direccion_estacion, telefono_estacion,
-            latitud_estacion, longitud_estacion } = req.body;
-        const nuevaEstacion = {
-        id,
-        nombre_estacion,
-        direccion_estacion,
-        telefono_estacion,
-        latitud_estacion,
-        longitud_estacion
-        };
-        console.log(nuevaEstacion)
-    connection.query('INSERT INTO gasolineras set ?', [nuevaEstacion]);
+    const nuevaSede = {
+    
+        ESTADO,
+        NOMBRE_SEDE,
+        LATITUD,
+        LONGITUD,
+        ID_CIUDAD,
+        ID_USUARIO,
+        t001_usuarios_id_usuario,
+
+    };
+    console.log(nuevaSede)
+    connection.query('INSERT INTO t005_sedes set ?', [nuevaSede]);
     res.json({
         Auth: true,
-        done: 'La estación fue agregada correctamente',
+        done: 'La Sede fue agregada correctamente',
         token: true
     });
-    }
+    
 });
-
-const getbyId = (id) => {
-    return new Promise((resolve, reject) =>{
-        connection.query('SELECT * FROM gasolineras where id = ?',
-        [id], 
-        (err, rows) => {
-            if(err) reject(err)
-            resolve(rows[0])
-        });
-    });
-};
-
 
 
 router.get('/delete/:id', verify,  async( req, res)=>{
 
     const { id } = req.params;
     const respuesta = new Promise((resolve, reject) => {
-        connection.query('delete from gasolineras where id = ?', 
+        connection.query('delete from t005_sedes where id_sede = ?', 
         [id],
         (err, rows) => {
             if(err) reject(err)
@@ -125,7 +116,7 @@ router.get('/delete/:id', verify,  async( req, res)=>{
         return res.json({
             Auth: false,
             token: true,
-            done: 'No se pudo Eliminar la estacion'
+            done: 'No se pudo Eliminar la Sede'
         });
     }
     else
@@ -133,7 +124,7 @@ router.get('/delete/:id', verify,  async( req, res)=>{
         return res.json({
             Auth: true,
             token: true,
-            done: 'La estacion se elimino correctamente'
+            done: 'La Sede se elimino correctamente'
         })
     }
 
@@ -141,20 +132,26 @@ router.get('/delete/:id', verify,  async( req, res)=>{
 
 router.post('/update/:id', verify, async (req, res)=>{
     const { id } = req.params;
-    const { nombre_estacion, direccion_estacion, telefono_estacion,
-            latitud_estacion, longitud_estacion } = req.body;
-    const actualizarE = {
-        nombre_estacion,
-        direccion_estacion,
-        telefono_estacion,
-        latitud_estacion,
-        longitud_estacion
-    }
+
+    const {ESTADO, NOMBRE_SEDE, LATITUD, LONGITUD, ID_CIUDAD, ID_USUARIO,
+        t001_usuarios_id_usuario, } = req.body;
+
+    const actualizarSede = {
+    
+        ESTADO,
+        NOMBRE_SEDE,
+        LATITUD,
+        LONGITUD,
+        ID_CIUDAD,
+        ID_USUARIO,
+        t001_usuarios_id_usuario,
+
+    };
 
 
     const respuesta = new Promise((resolve, reject) => {
-        connection.query('update gasolineras set ? where id = ?', 
-        [actualizarE, id],
+        connection.query('update t005_sedes set ? where id_sede = ?', 
+        [actualizarSede, id],
         (err, rows) => {
             if(err) reject(err)
             resolve(rows[0])
