@@ -19,9 +19,31 @@ const crearToken = (user) => {
     //return jwt.encodes(payload, process.env,TOKEN_KEY);
 }
 
+const getbyIdentificacion = (identificacion) => {
+    return new Promise((resolve, reject) =>{
+        connection.query('SELECT * FROM t001_usuarios where NUMERO_DOCUMENTO = ?',
+        [identificacion], 
+        (err, rows) => {
+            if(err) reject(err)
+            resolve(rows[0])
+        });
+    });
+};
 
-router.get('/', verify ,(req, res)=>{
-    connection.query('SELECT * FROM usuarios', (error, rows, fields)=>{
+const getbyId = (id) => {
+    return new Promise((resolve, reject) =>{
+        connection.query('SELECT * FROM t001_usuarios where ID_USUARIO = ?',
+        [id], 
+        (err, rows) => {
+            if(err) reject(err)
+            resolve(rows[0])
+        });
+    });
+};
+
+
+router.get('/' ,(req, res)=>{
+    connection.query('SELECT * FROM t001_usuarios', (error, rows, fields)=>{
         if(!error){
             res.json(rows);
         }else{
@@ -32,7 +54,7 @@ router.get('/', verify ,(req, res)=>{
 
 router.post('/agregar', async (req, res) =>{
 
-    const user = await getbyId(req.body.id);
+    const user = await getbyIdentificacion(req.body.NUMERO_DOCUMENTO);
 
     if(user)
     {
@@ -43,26 +65,31 @@ router.post('/agregar', async (req, res) =>{
     }
     else
     {
-        const { id, nombre_usuario, tipo_documento, sexo_usuario, nacionalidad_usuario, telefono_usuario,
-            direccion_usuario, clave_usuario } = req.body;
+        const { ID_USUARIO, PRIMER_NOMBRE, SEGUNDO_NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, SEXO, TIPO_DOCUMENTO, 
+            NUMERO_DOCUMENTO, CORREO_ELECTRONICO, CELUAR, ROL, PASSWORD, t003_roles_id_rol} = req.body;
         const nuevoUsuario = {
-            id,
-            nombre_usuario,
-            tipo_documento,
-            sexo_usuario,
-            nacionalidad_usuario,
-            telefono_usuario,
-            direccion_usuario,
-            clave_usuario
+            ID_USUARIO,
+            PRIMER_NOMBRE, 
+            SEGUNDO_NOMBRE, 
+            PRIMER_APELLIDO, 
+            SEGUNDO_APELLIDO, 
+            SEXO, 
+            TIPO_DOCUMENTO,
+            NUMERO_DOCUMENTO,
+            CORREO_ELECTRONICO,
+            CELUAR,
+            ROL,
+            PASSWORD,
+            t003_roles_id_rol
         };
-        nuevoUsuario.clave_usuario = bcrypt.hashSync(nuevoUsuario.clave_usuario, 10);
-        console.log(nuevoUsuario);
-        connection.query('insert into usuarios set ?', [nuevoUsuario]);
+        nuevoUsuario.PASSWORD = bcrypt.hashSync(nuevoUsuario.PASSWORD, 10);
+        connection.query('insert into t001_usuarios set ?', [nuevoUsuario]);
+        const nuevo = await getbyIdentificacion(req.body.NUMERO_DOCUMENTO)
         res.json({
             Auth: true,
             succesfull: crearToken(nuevoUsuario),
-            nombre_usuario: nuevoUsuario.nombre_usuario,
-            id: nuevoUsuario.id,
+            nombre_usuario: nuevoUsuario.PRIMER_NOMBRE,
+            id: nuevo.id_usuario,
             done: 'El usuarios fue agregado correctamente'
         });
     }
@@ -71,8 +98,9 @@ router.post('/agregar', async (req, res) =>{
 
 router.get('/delete/:id', verify, async( req, res)=>{
     const { id } = req.params;
+    console.log(id);
     const respuesta = new Promise((resolve, reject) => {
-        connection.query('delete from usuarios where id = ?', 
+        connection.query('delete from t001_usuarios where id_usuario = ?', 
         [id],
         (err, rows) => {
             if(err) reject(err)
@@ -100,19 +128,21 @@ router.get('/delete/:id', verify, async( req, res)=>{
 
 router.post('/update/:id', verify, async(req, res)=>{
     const { id } = req.params;
-    const { nombre_usuario, tipo_documento, sexo_usuario, nacionalidad_usuario, telefono_usuario,
-            direccion_usuario} = req.body;
+    const { PRIMER_NOMBRE, SEGUNDO_NOMBRE, PRIMER_APELLIDO, SEGUNDO_APELLIDO, SEXO, TIPO_DOCUMENTO, 
+         CORREO_ELECTRONICO, CELUAR} = req.body;
     const actualizarE = {
-        nombre_usuario,
-        tipo_documento,
-        sexo_usuario,
-        nacionalidad_usuario,
-        telefono_usuario,
-        direccion_usuario
+        PRIMER_NOMBRE, 
+        SEGUNDO_NOMBRE, 
+        PRIMER_APELLIDO, 
+        SEGUNDO_APELLIDO, 
+        SEXO, 
+        TIPO_DOCUMENTO,
+        CORREO_ELECTRONICO,
+        CELUAR,
     };
-
+    console.log(actualizarE)
     const respuesta = new Promise((resolve, reject) => {
-        connection.query('update usuarios set ? where id = ?', 
+        connection.query('update t001_usuarios set ? where id_usuario = ?', 
         [actualizarE, id],
         (err, rows) => {
             if(err) reject(err)
@@ -138,17 +168,6 @@ router.post('/update/:id', verify, async(req, res)=>{
     }
 });
 
-const getbyId = (id) => {
-    return new Promise((resolve, reject) =>{
-        connection.query('SELECT * FROM usuarios where id = ?',
-        [id], 
-        (err, rows) => {
-            if(err) reject(err)
-            resolve(rows[0])
-        });
-    });
-};
-
 router.get('/:id', verify, async (req, res, next) => {
     const {id} = req.params;
     const user  = await getbyId(id, {clave_usuario: 0});
@@ -169,22 +188,10 @@ router.get('/:id', verify, async (req, res, next) => {
 
 })
 
-const getbyUser = (usuario) => {
-    return new Promise((resolve, reject) =>{
-        connection.query('SELECT * FROM usuarios where nombre_usuario = ?',
-        [usuario], 
-        (err, rows) => {
-            if(err) reject(err)
-            resolve(rows[0])
-        });
-    });
-};
-
-
 router.post('/login', async(req, res) => {
 
     console.log(req.body);
-    const user = await getbyUser(req.body.nombre_usuario);
+    const user = await getbyIdentificacion(req.body.numero_identificacion);
     if(user === undefined)
     {
         res.json({
@@ -194,7 +201,7 @@ router.post('/login', async(req, res) => {
     }
     else
     {
-        const equals = bcrypt.compareSync(req.body.clave_usuario, user.clave_usuario);
+        const equals = bcrypt.compareSync(req.body.clave_usuario, user.password);
         //const equals = (req.body.clave_usuario === user.clave_usuario);
         if(!equals)
         {
@@ -208,8 +215,8 @@ router.post('/login', async(req, res) => {
             res.json({
                 Auth: true,
                 succesfull: crearToken(user),
-                nombre_usuario: user.nombre_usuario,
-                id: user.id,
+                nombre_usuario: user.primer_nombre,
+                id: user.id_usuario,
                 done: 'Login correct'
             })
         }
