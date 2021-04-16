@@ -7,10 +7,10 @@ const verify = require('./verifyToken')
 
 const connection = require('../database');
 
-const buscrarSede  = () => {
+const buscarGrupo  = () => {
 
     return new Promise((resolve, reject) =>{
-        connection.query('SELECT * FROM t005_sedes',(err, rows) => {
+        connection.query('SELECT * FROM t007_grupos',(err, rows) => {
             if(err) reject(err)
             resolve(rows)
         });
@@ -19,7 +19,7 @@ const buscrarSede  = () => {
 
 const getbyId = (id) => {
     return new Promise((resolve, reject) =>{
-        connection.query('SELECT * FROM t005_sedes where id_sede = ?',
+        connection.query('SELECT * FROM t007_grupos where id_grupo = ?',
         [id], 
         (err, rows) => {
             if(err) reject(err)
@@ -31,13 +31,13 @@ const getbyId = (id) => {
 
 router.get('/', async (req, res)=>{
 
-    const datos = await buscrarSede()
+    const datos = await buscarGrupo()
 
     if(!datos)
     {
         return res.json({
             Auth: false,
-            done: "no hay ninguna sede registrada",
+            done: "no hay ningun grupo registrado",
             data: {}
         })
     }
@@ -52,47 +52,43 @@ router.get('/', async (req, res)=>{
 
 router.get('/:id', verify,   async( req, res, next)=>{
     const { id } = req.params;
-    const sede = await getbyId(id)
+    const grupo = await getbyId(id)
     
-    if(!sede)
+    if(!grupo)
     {
         return(
             res.json({
             Auth: false,
-            done: 'La Sede no existe'
+            done: 'El grupo no existe'
             
         }))
     }
 
     res.json({
         Auth: true,
-        datos: sede, 
-        done: "Sede Encontrada"
+        datos: grupo, 
+        done: "Grupo Encontrado"
     });  
 });
 
 
 router.post('/agregar', verify, async(req, res) =>{
 
-    const {ESTADO, NOMBRE_SEDE, LATITUD, LONGITUD, ID_CIUDAD, ID_USUARIO,
-        t001_usuarios_id_usuario, } = req.body;
+    const {ESTADO, CUPO_ESTUDIANTES, SEMESTRE, TOTAL_ESTUDIANTES, } = req.body;
 
-    const nuevaSede = {
+    const nuevoGrupo = {
     
         ESTADO,
-        NOMBRE_SEDE,
-        LATITUD,
-        LONGITUD,
-        ID_CIUDAD,
-        ID_USUARIO,
-        t001_usuarios_id_usuario,
+        CUPO_ESTUDIANTES,
+        SEMESTRE,
+        TOTAL_ESTUDIANTES,
 
     };
-    console.log(nuevaSede)
-    connection.query('INSERT INTO t005_sedes set ?', [nuevaSede]);
+    console.log(nuevoGrupo)
+    connection.query('INSERT INTO t007_grupos set ?', [nuevoGrupo]);
     res.json({
         Auth: true,
-        done: 'La Sede fue agregada correctamente',
+        done: 'El Grupo fue agregado correctamente',
         token: true
     });
     
@@ -103,7 +99,7 @@ router.get('/delete/:id', verify,  async( req, res)=>{
 
     const { id } = req.params;
     const respuesta = new Promise((resolve, reject) => {
-        connection.query('delete from t005_sedes where id_sede = ?', 
+        connection.query('delete from t007_grupos where id_grupo = ?', 
         [id],
         (err, rows) => {
             if(err) reject(err)
@@ -116,7 +112,7 @@ router.get('/delete/:id', verify,  async( req, res)=>{
         return res.json({
             Auth: false,
             token: true,
-            done: 'No se pudo Eliminar la Sede'
+            done: 'No se pudo Eliminar el grupo'
         });
     }
     else
@@ -124,7 +120,7 @@ router.get('/delete/:id', verify,  async( req, res)=>{
         return res.json({
             Auth: true,
             token: true,
-            done: 'La Sede se elimino correctamente'
+            done: 'El grupo se elimino correctamente'
         })
     }
 
@@ -132,28 +128,22 @@ router.get('/delete/:id', verify,  async( req, res)=>{
 
 router.post('/update/:id', verify, async (req, res)=>{
     const { id } = req.params;
-    console.log(req.body)
 
-    const {estado, nombre_sede, latitud, longitud, id_ciudad, id_usuario,
-        t001_usuarios_id_usuario, } = req.body;
+    const {estado, cupo_estudiantes, semestre, total_estudiantes, } = req.body;
 
-    const actualizarSede = {
+    const actualizarGrupo = {
     
         estado,
-        nombre_sede,
-        latitud,
-        longitud,
-        id_ciudad,
-        id_usuario,
-        t001_usuarios_id_usuario,
+        cupo_estudiantes,
+        semestre,
+        total_estudiantes,
 
     };
 
-    console.log(actualizarSede)
 
     const respuesta = new Promise((resolve, reject) => {
-        connection.query('update t005_sedes set ? where id_sede = ?', 
-        [actualizarSede, id],
+        connection.query('update t007_grupos set ? where id_grupo = ?', 
+        [actualizarGrupo, id],
         (err, rows) => {
             if(err) reject(err)
             resolve(rows[0])

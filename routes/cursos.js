@@ -7,10 +7,10 @@ const verify = require('./verifyToken')
 
 const connection = require('../database');
 
-const buscrarSede  = () => {
+const buscarCurso  = () => {
 
     return new Promise((resolve, reject) =>{
-        connection.query('SELECT * FROM t005_sedes',(err, rows) => {
+        connection.query('SELECT * FROM t006_cursos',(err, rows) => {
             if(err) reject(err)
             resolve(rows)
         });
@@ -19,7 +19,7 @@ const buscrarSede  = () => {
 
 const getbyId = (id) => {
     return new Promise((resolve, reject) =>{
-        connection.query('SELECT * FROM t005_sedes where id_sede = ?',
+        connection.query('SELECT * FROM t006_cursos where id_curso = ?',
         [id], 
         (err, rows) => {
             if(err) reject(err)
@@ -31,13 +31,13 @@ const getbyId = (id) => {
 
 router.get('/', async (req, res)=>{
 
-    const datos = await buscrarSede()
+    const datos = await buscarCurso()
 
     if(!datos)
     {
         return res.json({
             Auth: false,
-            done: "no hay ninguna sede registrada",
+            done: "no hay ningun curso registrado",
             data: {}
         })
     }
@@ -52,47 +52,46 @@ router.get('/', async (req, res)=>{
 
 router.get('/:id', verify,   async( req, res, next)=>{
     const { id } = req.params;
-    const sede = await getbyId(id)
+    const curso = await getbyId(id)
     
-    if(!sede)
+    if(!curso)
     {
         return(
             res.json({
             Auth: false,
-            done: 'La Sede no existe'
+            done: 'El Curso no existe'
             
         }))
     }
 
     res.json({
         Auth: true,
-        datos: sede, 
-        done: "Sede Encontrada"
+        datos: curso, 
+        done: "Curso Encontrado"
     });  
 });
 
 
 router.post('/agregar', verify, async(req, res) =>{
 
-    const {ESTADO, NOMBRE_SEDE, LATITUD, LONGITUD, ID_CIUDAD, ID_USUARIO,
-        t001_usuarios_id_usuario, } = req.body;
+    const {ESTADO, CODIGO_CURSO, NOMBRE_CURSO, DESCRIPCION_CURSO, CREDITOS_CURSO, CATEGORIA_CURSO,
+     } = req.body;
 
-    const nuevaSede = {
+    const nuevoCurso = {
     
         ESTADO,
-        NOMBRE_SEDE,
-        LATITUD,
-        LONGITUD,
-        ID_CIUDAD,
-        ID_USUARIO,
-        t001_usuarios_id_usuario,
+        CODIGO_CURSO,
+        NOMBRE_CURSO,
+        DESCRIPCION_CURSO,
+        CREDITOS_CURSO,
+        CATEGORIA_CURSO,
 
     };
-    console.log(nuevaSede)
-    connection.query('INSERT INTO t005_sedes set ?', [nuevaSede]);
+    console.log(nuevoCurso)
+    connection.query('INSERT INTO t006_cursos set ?', [nuevoCurso]);
     res.json({
         Auth: true,
-        done: 'La Sede fue agregada correctamente',
+        done: 'El Curso fue agregado correctamente',
         token: true
     });
     
@@ -103,7 +102,7 @@ router.get('/delete/:id', verify,  async( req, res)=>{
 
     const { id } = req.params;
     const respuesta = new Promise((resolve, reject) => {
-        connection.query('delete from t005_sedes where id_sede = ?', 
+        connection.query('delete from t006_cursos where id_curso = ?', 
         [id],
         (err, rows) => {
             if(err) reject(err)
@@ -116,7 +115,7 @@ router.get('/delete/:id', verify,  async( req, res)=>{
         return res.json({
             Auth: false,
             token: true,
-            done: 'No se pudo Eliminar la Sede'
+            done: 'No se pudo Eliminar el Curso'
         });
     }
     else
@@ -124,7 +123,7 @@ router.get('/delete/:id', verify,  async( req, res)=>{
         return res.json({
             Auth: true,
             token: true,
-            done: 'La Sede se elimino correctamente'
+            done: 'El curso se elimino correctamente'
         })
     }
 
@@ -134,26 +133,25 @@ router.post('/update/:id', verify, async (req, res)=>{
     const { id } = req.params;
     console.log(req.body)
 
-    const {estado, nombre_sede, latitud, longitud, id_ciudad, id_usuario,
-        t001_usuarios_id_usuario, } = req.body;
+    const {estado, codigo_curso, nombre_curso, descripcion_curso, creditos_curso, categoria_curso,
+    } = req.body;
 
-    const actualizarSede = {
+    const actualizarCurso = {
     
         estado,
-        nombre_sede,
-        latitud,
-        longitud,
-        id_ciudad,
-        id_usuario,
-        t001_usuarios_id_usuario,
+        codigo_curso,
+        nombre_curso,
+        descripcion_curso,
+        creditos_curso,
+        categoria_curso,
 
     };
 
-    console.log(actualizarSede)
+    console.log(actualizarCurso)
 
     const respuesta = new Promise((resolve, reject) => {
-        connection.query('update t005_sedes set ? where id_sede = ?', 
-        [actualizarSede, id],
+        connection.query('update t006_cursos set ? where id_curso = ?', 
+        [actualizarCurso, id],
         (err, rows) => {
             if(err) reject(err)
             resolve(rows[0])
